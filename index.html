@@ -14,6 +14,35 @@
       width: 100%;
     }
   </style>
+  <style>
+  .label-text {
+    font-size: 12px;
+    font-weight: bold;
+    color: black;
+    text-align: center;
+    white-space: nowrap;
+    pointer-events: none;
+  }
+
+  .info.legend {
+    background: white;
+    padding: 6px 10px;
+    font-size: 12px;
+    line-height: 18px;
+    color: #555;
+    border-radius: 4px;
+    box-shadow: 0 0 15px rgba(0,0,0,0.2);
+  }
+
+  .info.legend i {
+    width: 18px;
+    height: 18px;
+    float: left;
+    margin-right: 8px;
+    opacity: 0.7;
+  }
+</style>
+
 </head>
 <body>
 
@@ -33,7 +62,7 @@
     attribution: '© OpenStreetMap contributors'
   }).addTo(map);
 
-// Hàm chọn màu theo mật độ
+// Hàm chọn màu theo density
 function getColor(d) {
   return d > 1000 ? '#800026' :
          d > 500  ? '#BD0026' :
@@ -45,34 +74,69 @@ function getColor(d) {
                     '#FFEDA0';
 }
 
-// Hàm style polygon theo mật độ
+// Style của polygon
 function style(feature) {
   return {
     fillColor: getColor(feature.properties.density),
-    weight: 2,
+    weight: 1,
     opacity: 1,
     color: 'white',
-    dashArray: '3',
+    dashArray: '2',
     fillOpacity: 0.7
   };
 }
 
-// Load GeoJSON và hiển thị theo density
+// Tạo nhãn (label) từ VARNAME_3
+function onEachFeature(feature, layer) {
+  const name = feature.properties.name;
+  const density = feature.properties.density;
+  const label = feature.properties.VARNAME_3;
+
+  layer.bindPopup(`<b>${name}</b><br>Mật độ: ${density}`);
+
+  // Hiển thị label trực tiếp trên bản đồ
+  if (label) {
+    const center = layer.getBounds().getCenter();
+    const labelMarker = L.marker(center, {
+      icon: L.divIcon({
+        className: 'label-text',
+        html: `<div>${label}</div>`,
+        iconSize: [100, 20]
+      })
+    }).addTo(map);
+  }
+}
+
+// Load file GeoJSON
 fetch('chilang.geojson')
   .then(res => res.json())
   .then(data => {
     var geoLayer = L.geoJSON(data, {
       style: style,
-      onEachFeature: function (feature, layer) {
-        const name = feature.properties.name;
-        const density = feature.properties.density;
-        layer.bindPopup(`<b>${name}</b><br>Mật độ: ${density}`);
-      }
+      onEachFeature: onEachFeature
     }).addTo(map);
 
-    // Zoom tới vùng dữ liệu
     map.fitBounds(geoLayer.getBounds());
   });
+
+// Thêm chú giải (Legend)
+var legend = L.control({ position: 'bottomright' });
+
+legend.onAdd = function (map) {
+  var div = L.DomUtil.create('div', 'info legend'),
+      grades = [0, 10, 20, 50, 100, 200, 500, 1000],
+      labels = [];
+
+  for (var i = 0; i < grades.length; i++) {
+    div.innerHTML +=
+      '<i style="background:' + getColor(grades[i] + 1) + '"></i> ' +
+      grades[i] + (grades[i + 1] ? '&ndash;' + grades[i + 1] + '<br>' : '+');
+  }
+
+  return div;
+};
+
+legend.addTo(map);
 
 </script>
 
