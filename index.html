@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>WebGIS cơ bản với Leaflet</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
+  <style>
+    #map {
+      height: 100vh;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+
+<h3 style="text-align:center;">WebGIS Q2 midterm2 của student - ID</h3>
+<div id="map"></div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<script>
+  // Khởi tạo bản đồ và đặt vị trí trung tâm (tọa độ Việt Nam)
+  var map = L.map('map').setView([21.6748, 106.6217], 14);
+
+  // Thêm lớp nền từ OpenStreetMap
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '© OpenStreetMap contributors'
+  }).addTo(map);
+
+// Hàm chọn màu theo mật độ
+function getColor(d) {
+  return d > 1000 ? '#800026' :
+         d > 500  ? '#BD0026' :
+         d > 200  ? '#E31A1C' :
+         d > 100  ? '#FC4E2A' :
+         d > 50   ? '#FD8D3C' :
+         d > 20   ? '#FEB24C' :
+         d > 10   ? '#FED976' :
+                    '#FFEDA0';
+}
+
+// Hàm style polygon theo mật độ
+function style(feature) {
+  return {
+    fillColor: getColor(feature.properties.density),
+    weight: 2,
+    opacity: 1,
+    color: 'white',
+    dashArray: '3',
+    fillOpacity: 0.7
+  };
+}
+
+// Load GeoJSON và hiển thị theo density
+fetch('chilang.geojson')
+  .then(res => res.json())
+  .then(data => {
+    var geoLayer = L.geoJSON(data, {
+      style: style,
+      onEachFeature: function (feature, layer) {
+        const name = feature.properties.name;
+        const density = feature.properties.density;
+        layer.bindPopup(`<b>${name}</b><br>Mật độ: ${density}`);
+      }
+    }).addTo(map);
+
+    // Zoom tới vùng dữ liệu
+    map.fitBounds(geoLayer.getBounds());
+  });
+
+</script>
+
+</body>
+</html>
